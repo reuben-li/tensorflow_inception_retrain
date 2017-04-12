@@ -18,8 +18,13 @@ def run_inference_on_image():
     create_graph()
 
     with tf.Session() as sess:
+        global_count = 0.0
+        global_pos = 0.0
+        acc_list = []
+
         for subd in os.listdir(testImagePath):
             subPath = os.path.join(testImagePath, subd)
+            acc_list.append(0)
             for image in os.listdir(subPath):
                 oneImage = os.path.join(subPath, image)
                 image_data = tf.gfile.FastGFile(oneImage, 'rb').read()
@@ -37,8 +42,15 @@ def run_inference_on_image():
                     human_string = labels[node_id]
                     score = predictions[node_id]
                 answer = labels[top_k[0]]
-                print answer
-        return answer
+                global_count += 1.0
+                if answer == subd:
+                    global_pos += 1.0
+                acc = round(global_pos/global_count, 3)
+                acc_list[int(subd)] = acc
+                gc = int(global_count)
+                ba = round(sum(acc_list)/float(len(acc_list)), 3)
+                print(str(gc) + '. acc: ' + str(acc) + '; bal_acc: ' + str(ba))
+    return
 
 if __name__ == '__main__':
     print run_inference_on_image()
