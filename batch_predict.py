@@ -29,15 +29,13 @@ def run_inference_on_image():
                                        {'DecodeJpeg/contents:0': image_data})
                 predictions = np.squeeze(predictions)
 
-                top_k = predictions.argsort()[-1:][::-1]  # Getting top 5 predictions
+                top_k = predictions.argsort()[-1:][::-1]
                 f = open(labelsFullPath, 'rb')
                 lines = f.readlines()
                 labels = [str(w).replace("\n", "") for w in lines]
                 for node_id in top_k:
                     human_string = labels[node_id]
                     score = predictions[node_id]
-                    # print('%s (score = %.5f)' % (human_string, score))
-
                 answer = labels[top_k[0]]
                 print answer
         return answer
