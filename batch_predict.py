@@ -1,6 +1,7 @@
 """
 Batch prediction using trained graph
 """
+from __future__ import print_function
 import os
 import numpy as np
 import tensorflow as tf
@@ -20,19 +21,15 @@ def load_graph():
 
 def batch_predict():
     """ Loop through images and run prediction """
-    answer = None
     load_graph()
-
+    result = [x[:] for x in [[0] * CLASSES] * CLASSES]
     with tf.Session() as sess:
-        result = [x[:] for x in [[0] * CLASSES] * CLASSES]
-
-        for subd in os.listdir(IMAGE_PATH):
-            sub_path = os.path.join(IMAGE_PATH)
+        for true_label in os.listdir(IMAGE_PATH):
+            sub_path = os.path.join(IMAGE_PATH, true_label)
             count = 0
             for image in os.listdir(sub_path):
                 one_image = os.path.join(sub_path, image)
                 image_data = tf.gfile.FastGFile(one_image, 'rb').read()
-
                 softmax_tensor = sess.graph.get_tensor_by_name('final_result:0')
                 predictions = sess.run(softmax_tensor,
                                        {'DecodeJpeg/contents:0': image_data})
@@ -40,19 +37,16 @@ def batch_predict():
                 top_k = predictions.argsort()[-1:][::-1]
                 labels_file = open(LABELS_FILE, 'rb')
                 lines = labels_file.readlines()
-                labels = [str(w).replace("\n", "") for w in lines]
-#                for node_id in top_k:
-#                    human_string = labels[node_id]
-#                    score = predictions[node_id]
+                labels = [str(w).replace('\n', '') for w in lines]
                 answer = int(labels[top_k[0]])
-                subd = int(subd)
-                result[subd][answer] += 1
+                result[int(true_label)][answer] += 1
                 count += 1
                 if count >= 2:
                     break
     return result
 
-if __name__ == '__main__':
+def main():
+    """ main function for scoping """
     output = batch_predict()
     pos = 0.0
     cnt = 0.0
@@ -68,11 +62,14 @@ if __name__ == '__main__':
     print('acc: ' + str(pos/cnt))
     print('ba: ' + str(sum_avg / CLASSES))
     fig = plt.figure(figsize=(6, 3.2))
-
-    ax = fig.add_subplot(111)
-    ax.set_title('colorMap')
+    axes = fig.add_subplot(111)
+    axes.set_title('colorMap')
     plt.imshow(output, cmap='Blues')
-    ax.set_aspect('equal')
+    axes.set_aspect('equal')
     plt.colorbar(orientation='vertical')
     plt.show()
     np.save('output.npy', output)
+
+
+if __name__ == '__main__':
+    main()
