@@ -1,56 +1,78 @@
+"""
+Batch prediction using trained graph
+"""
+import os
 import numpy as np
 import tensorflow as tf
-import os
+import matplotlib.pyplot as plt
 
-testImagePath = './test_data'
-modelFullPath = '/tmp/output_graph.pb'
-labelsFullPath = '/tmp/output_labels.txt'
+IMAGE_PATH = './test_data'
+MODEL_FILE = '/tmp/output_graph.pb'
+LABELS_FILE = '/tmp/output_labels.txt'
+CLASSES = 25
 
-def create_graph():
-    with tf.gfile.FastGFile(modelFullPath, 'rb') as f:
+def load_graph():
+    """ Load graph into memory"""
+    with tf.gfile.FastGFile(MODEL_FILE, 'rb') as graph:
         graph_def = tf.GraphDef()
-        graph_def.ParseFromString(f.read())
+        graph_def.ParseFromString(graph.read())
         _ = tf.import_graph_def(graph_def, name='')
 
-def run_inference_on_image():
+def batch_predict():
+    """ Loop through images and run prediction """
     answer = None
-
-    create_graph()
+    load_graph()
 
     with tf.Session() as sess:
-        global_count = 0.0
-        global_pos = 0.0
-        acc_list = []
+        result = [x[:] for x in [[0] * CLASSES] * CLASSES]
 
-        for subd in os.listdir(testImagePath):
-            subPath = os.path.join(testImagePath, subd)
-            acc_list.append(0)
-            for image in os.listdir(subPath):
-                oneImage = os.path.join(subPath, image)
-                image_data = tf.gfile.FastGFile(oneImage, 'rb').read()
+        for subd in os.listdir(IMAGE_PATH):
+            sub_path = os.path.join(IMAGE_PATH)
+            count = 0
+            for image in os.listdir(sub_path):
+                one_image = os.path.join(sub_path, image)
+                image_data = tf.gfile.FastGFile(one_image, 'rb').read()
 
                 softmax_tensor = sess.graph.get_tensor_by_name('final_result:0')
                 predictions = sess.run(softmax_tensor,
                                        {'DecodeJpeg/contents:0': image_data})
                 predictions = np.squeeze(predictions)
-
                 top_k = predictions.argsort()[-1:][::-1]
-                f = open(labelsFullPath, 'rb')
-                lines = f.readlines()
+                labels_file = open(LABELS_FILE, 'rb')
+                lines = labels_file.readlines()
                 labels = [str(w).replace("\n", "") for w in lines]
-                for node_id in top_k:
-                    human_string = labels[node_id]
-                    score = predictions[node_id]
-                answer = labels[top_k[0]]
-                global_count += 1.0
-                if answer == subd:
-                    global_pos += 1.0
-                acc = round(global_pos/global_count, 3)
-                acc_list[int(subd)] = acc
-                gc = int(global_count)
-                ba = round(sum(acc_list)/float(len(acc_list)), 3)
-                print(str(gc) + '. acc: ' + str(acc) + '; bal_acc: ' + str(ba))
-    return
+#                for node_id in top_k:
+#                    human_string = labels[node_id]
+#                    score = predictions[node_id]
+                answer = int(labels[top_k[0]])
+                subd = int(subd)
+                result[subd][answer] += 1
+                count += 1
+                if count >= 2:
+                    break
+    return result
 
 if __name__ == '__main__':
-    print run_inference_on_image()
+    output = batch_predict()
+    pos = 0.0
+    cnt = 0.0
+    sum_avg = 0.0
+    for label in xrange(0, CLASSES):
+        local_pos = float(output[label][label])
+        local_cnt = float(sum(output[label]))
+        pos += local_pos
+        cnt += local_cnt
+        avg = local_pos/local_cnt
+        sum_avg += avg
+        print('label ' + str(label) + ': ' + str(avg))
+    print('acc: ' + str(pos/cnt))
+    print('ba: ' + str(sum_avg / CLASSES))
+    fig = plt.figure(figsize=(6, 3.2))
+
+    ax = fig.add_subplot(111)
+    ax.set_title('colorMap')
+    plt.imshow(output, cmap='Blues')
+    ax.set_aspect('equal')
+    plt.colorbar(orientation='vertical')
+    plt.show()
+    np.save('output.npy', output)
