@@ -3,9 +3,9 @@
 DATA_PATH="../train_data"
 MODEL_PATH="../model"
 BOTTLENECK_PATH="../bottleneck"
-GRAPH_PATH="../graph"
-LABELS_PATH="../labels"
-INIT=true
+GRAPH_PATH="../output/output_graph.pb"
+LABELS_PATH="../output/output_labels.txt"
+INIT=false
 
 if [  "$INIT" = true ]; then
   # install bazel (ubuntu)
@@ -14,10 +14,12 @@ if [  "$INIT" = true ]; then
   sudo apt-get update && sudo apt-get install bazel
 
   # Compile retrain function in tensorflow master
-   git clone https://github.com/tensorflow/tensorflow.git
-   cd tensorflow
-   ./configure
-   bazel build tensorflow/examples/image_retraining:retrain
+  git clone https://github.com/tensorflow/tensorflow.git
+  cd tensorflow
+  ./configure
+  bazel build tensorflow/examples/image_retraining:retrain
+else
+  cd tensorflow
 fi
 
 # Retraining with proper image directory
