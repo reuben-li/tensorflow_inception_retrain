@@ -3,9 +3,9 @@ Batch prediction using trained graph
 """
 from __future__ import print_function
 import os
-import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import numpy as np
 
 IMAGE_PATH = './test_data'
 MODEL_FILE = './output/output_graph.pb'
@@ -28,6 +28,7 @@ def batch_predict():
         for true_label in os.listdir(IMAGE_PATH):
             sub_path = os.path.join(IMAGE_PATH, true_label)
             count = 0
+            print('Training label ' + str(true_label) + '.')
             for image in os.listdir(sub_path):
                 one_image = os.path.join(sub_path, image)
                 image_data = tf.gfile.FastGFile(one_image, 'rb').read()
@@ -44,6 +45,7 @@ def batch_predict():
                 count += 1
                 if count >= 2 and TEST_FLAG:
                     break
+            print(str(count) + '/' + CLASSES + ' trained.')
     return result
 
 def main():
