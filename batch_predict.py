@@ -8,9 +8,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 IMAGE_PATH = './test_data'
-MODEL_FILE = '/tmp/output_graph.pb'
-LABELS_FILE = '/tmp/output_labels.txt'
-CLASSES = 25
+MODEL_FILE = './output/output_graph.pb'
+LABELS_FILE = './output/output_labels.txt'
+CLASSES = 24
+TEST_FLAG = False
 
 def load_graph():
     """ Load graph into memory"""
@@ -41,7 +42,7 @@ def batch_predict():
                 answer = int(labels[top_k[0]])
                 result[int(true_label)][answer] += 1
                 count += 1
-                if count >= 2:
+                if count >= 2 and TEST_FLAG:
                     break
     return result
 
