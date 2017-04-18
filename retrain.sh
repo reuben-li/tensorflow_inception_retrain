@@ -28,4 +28,4 @@ bazel-bin/tensorflow/examples/image_retraining/retrain \
   --bottleneck_dir "$BOTTLENECK_PATH" --output_graph "$GRAPH_PATH" \
   --output_labels "$LABELS_PATH" --validation_batch_size -1 \
   --print_misclassified_test_images True  --test_batch_size -1 \
-  --learning-rate 0.02
+  --learning-rate 0.02 --how_many_training_steps 10000

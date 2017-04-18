@@ -45,7 +45,7 @@ def batch_predict():
                 count += 1
                 if count >= 2 and TEST_FLAG:
                     break
-            print(str(count) + '/' + CLASSES + ' trained.')
+            print(str(count) + '/' + str(CLASSES) + ' trained.')
     return result
 
 def main():
