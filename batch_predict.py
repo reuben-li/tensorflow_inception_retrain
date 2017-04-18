@@ -28,6 +28,7 @@ def batch_predict():
         for true_label in os.listdir(IMAGE_PATH):
             sub_path = os.path.join(IMAGE_PATH, true_label)
             count = 0
+            class_count = 0
             print('Training label ' + str(true_label) + '.')
             for image in os.listdir(sub_path):
                 one_image = os.path.join(sub_path, image)
@@ -45,7 +46,7 @@ def batch_predict():
                 count += 1
                 if count >= 2 and TEST_FLAG:
                     break
-            print(str(count) + '/' + str(CLASSES) + ' trained.')
+            print(str(class_count) + '/' + str(CLASSES) + ' trained.')
     return result
 
 def main():
