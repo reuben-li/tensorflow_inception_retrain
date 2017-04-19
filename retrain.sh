@@ -7,6 +7,10 @@ GRAPH_PATH="../output/output_graph.pb"
 LABELS_PATH="../output/output_labels.txt"
 INIT=false
 
+# hyperparams
+EPOCHS=20000
+LEARNING_RATE=0.02
+
 if [  "$INIT" = true ]; then
   # install bazel (ubuntu)
   echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
@@ -28,4 +32,4 @@ bazel-bin/tensorflow/examples/image_retraining/retrain \
   --bottleneck_dir "$BOTTLENECK_PATH" --output_graph "$GRAPH_PATH" \
   --output_labels "$LABELS_PATH" --validation_batch_size -1 \
   --print_misclassified_test_images True  --test_batch_size -1 \
-  --learning-rate 0.02 --how_many_training_steps 10000
+  --learning-rate "$LEARNING_RATE" --how_many_training_steps "$EPOCHS" \
