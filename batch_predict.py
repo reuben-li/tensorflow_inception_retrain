@@ -3,9 +3,12 @@ Batch prediction using trained graph
 """
 from __future__ import print_function
 import os
+import itertools
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
+from sklearn.metrics import confusion_matrix
 
 IMAGE_PATH = './test_data'
 MODEL_FILE = './output/output_graph.pb'
@@ -23,13 +26,16 @@ def load_graph():
 def batch_predict():
     """ Loop through images and run prediction """
     load_graph()
-    result = [x[:] for x in [[0] * CLASSES] * CLASSES]
+    pred_list = []
+    label_list = []
+    class_names = []
     with tf.Session() as sess:
-        for true_label in os.listdir(IMAGE_PATH):
+        class_count = 0
+        for true_label in sorted(os.listdir(IMAGE_PATH), key=int):
             sub_path = os.path.join(IMAGE_PATH, true_label)
             count = 0
-            class_count = 0
-            print('Training label ' + str(true_label) + '.')
+            class_names.append(true_label)
+            print('Predicting label ' + str(true_label) + '.')
             for image in os.listdir(sub_path):
                 one_image = os.path.join(sub_path, image)
                 image_data = tf.gfile.FastGFile(one_image, 'rb').read()
@@ -42,38 +48,72 @@ def batch_predict():
                 lines = labels_file.readlines()
                 labels = [str(w).replace('\n', '') for w in lines]
                 answer = int(labels[top_k[0]])
-                result[int(true_label)][answer] += 1
+                label_list.append(int(true_label))
+                pred_list.append(int(answer))
                 count += 1
                 if count >= 2 and TEST_FLAG:
                     break
-            print(str(class_count) + '/' + str(CLASSES) + ' trained.')
-    return result
+            class_count += 1
+            print(str(class_count) + '/' + str(CLASSES) + ' predicted.')
+    return label_list, pred_list, class_names
+
+def acc(dataf):
+    """ Find the average score for a given dataframe """
+    return float(len(dataf[(dataf['label'] == dataf['pred'])]))/len(dataf)
+
+def balanced_acc(dataf):
+    """ Find the balanced average score for a given dataframe """
+    return sum(dataf.groupby('label').apply(acc))/CLASSES
+
+def plot_confusion_matrix(matrix, classes, normalize=False,
+                          title='Confusion matrix', cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    plt.imshow(matrix, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    thresh = matrix.max() / 2.
+    for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
+        plt.text(j, i, matrix[i, j],
+                 horizontalalignment="center",
+                 color="white" if matrix[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
 
 def main():
     """ main function for scoping """
-    output = batch_predict()
-    pos = 0.0
-    cnt = 0.0
-    sum_avg = 0.0
-    for label in xrange(0, CLASSES):
-        local_pos = float(output[label][label])
-        local_cnt = float(sum(output[label]))
-        pos += local_pos
-        cnt += local_cnt
-        avg = local_pos/local_cnt
-        sum_avg += avg
-        print('label ' + str(label) + ': ' + str(avg))
-    print('acc: ' + str(pos/cnt))
-    print('ba: ' + str(sum_avg / CLASSES))
-    fig = plt.figure(figsize=(6, 3.2))
-    axes = fig.add_subplot(111)
-    axes.set_title('colorMap')
-    plt.imshow(output, cmap='Blues')
-    axes.set_aspect('equal')
-    plt.colorbar(orientation='vertical')
+    label_list, pred_list, class_names = batch_predict()
+    dataframe = pd.DataFrame({'label': label_list, 'pred': pred_list})
+
+    print('accuracy: ' + str(acc(dataframe)))
+    print('balanced_accuracy: ' + str(balanced_acc(dataframe)))
+
+    output = confusion_matrix(label_list, pred_list)
+    np.set_printoptions(precision=2)
+
+    plt.figure(figsize=(18, 10))
+    plot_confusion_matrix(output, classes=class_names,
+                          title='Confusion matrix, without normalization')
+
+    plt.figure(figsize=(18, 10))
+    plot_confusion_matrix(output, classes=class_names, normalize=True,
+                          title='Normalized confusion matrix')
     plt.show()
     np.save('output.npy', output)
-
 
 if __name__ == '__main__':
     main()
