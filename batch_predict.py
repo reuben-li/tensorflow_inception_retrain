@@ -86,7 +86,7 @@ def plot_confusion_matrix(matrix, classes, normalize=False,
 
     thresh = matrix.max() / 2.
     for i, j in itertools.product(range(matrix.shape[0]), range(matrix.shape[1])):
-        plt.text(j, i, matrix[i, j],
+        plt.text(j, i, round(matrix[i, j], 1),
                  horizontalalignment="center",
                  color="white" if matrix[i, j] > thresh else "black")
 
